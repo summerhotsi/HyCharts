@@ -164,15 +164,17 @@
     self.klineContentLayer = layer;
     
     CGFloat width = 160;
-    NSArray<NSString *> *leftTitleArray = @[@"时间 ", @"开 ", @"高 ", @"低 ", @"收 ", @"涨跌额", @"涨跌幅", @"成交量"];
+//    TODO: YK
+    NSArray<NSString *> *leftTitleArray = @[@"时间 ", @"开 ", @"高 ", @"低 ", @"收 ", @"振幅", @"涨幅", @"成交量"];
     NSArray<NSString *> *rightTitleArray = @[SafetyString(model.time),
                                              SafetyString([model.priceNunmberFormatter stringFromNumber:model.openPrice]),
                                              SafetyString([model.priceNunmberFormatter stringFromNumber:model.highPrice]),
                                              SafetyString([model.priceNunmberFormatter stringFromNumber:model.lowPrice]),
                                              SafetyString([model.priceNunmberFormatter stringFromNumber:model.closePrice]),
-                                             SafetyString([model.priceNunmberFormatter stringFromNumber:model.trendChanging]),
+//                                             SafetyString([model.priceNunmberFormatter stringFromNumber:model.trendChanging]),
+                                             [NSString stringWithFormat:@"%.2f%@", model.trendChanging.floatValue * 100, @"%"],
                                              [NSString stringWithFormat:@"%.2f%@", model.trendPercent.floatValue * 100, @"%"],
-                                             SafetyString([model.volumeNunmberFormatter stringFromNumber:model.volume])];
+                                             [self changeAsset:SafetyString([model.volumeNunmberFormatter stringFromNumber:model.volume])]];
     
     UIColor *trendColor = UIColor.whiteColor;
     if (model.trend == HyChartKLineTrendUp) {
@@ -207,18 +209,54 @@
             rightTextLayer.foregroundColor = trendColor.CGColor;
         }
     }
-    
+//    TODO: SM
     CGFloat x, y;
     if (point.x < CGRectGetWidth(self.bounds) / 2) {
-        x = point.x + 5;
+        x = point.x + 30;
     } else {
-        x = point.x - width - 5;
+        x = point.x - width - 30;
     }
-    y = point.y - top - 5;
+    y = point.y - top - 30;
     if (y < 20) {
-        y = point.y + 5;
+        y = point.y + 30;
     }
     layer.frame = CGRectMake(x, y, width, top);
 }
+
+// TODO: SM
+- (NSString *)changeAsset:(NSString *)string
+{
+    NSDecimalNumber *numberA = [NSDecimalNumber decimalNumberWithString:string];
+      NSDecimalNumber *numberB ;
+      NSString *unitStr;
+        
+    NSString * subStr = [NSString stringWithFormat:@"%ld",[string integerValue]];
+      if (subStr.length > 3 && subStr.length <7 ) {
+          numberB =  [NSDecimalNumber decimalNumberWithString:@"1000"];
+          unitStr = @"K";
+      }else if (subStr.length >6){
+          numberB =  [NSDecimalNumber decimalNumberWithString:@"1000000"];
+          unitStr = @"M";
+      }
+//      else if(string.length ==8){
+//          numberB =  [NSDecimalNumber decimalNumberWithString:@"10000000"];
+//          unitStr = @"千万";
+//      }
+//      else if (string.length > 8){
+//          numberB =  [NSDecimalNumber decimalNumberWithString:@"100000000"];
+//          unitStr = @"亿";
+//      }
+      else{
+          return string;
+      }
+      //NSDecimalNumberBehaviors对象的创建  参数 1.RoundingMode 一个取舍枚举值 2.scale 处理范围 3.raiseOnExactness  精确出现异常是否抛出原因 4.raiseOnOverflow  上溢出是否抛出原因  4.raiseOnUnderflow  下溢出是否抛出原因  5.raiseOnDivideByZero  除以0是否抛出原因。
+      NSDecimalNumberHandler *roundingBehavior = [NSDecimalNumberHandler decimalNumberHandlerWithRoundingMode:NSRoundDown scale:2 raiseOnExactness:NO raiseOnOverflow:NO raiseOnUnderflow:NO raiseOnDivideByZero:NO];
+      
+      /// 这里不仅包含Multiply还有加 减 乘。
+      NSDecimalNumber *numResult = [numberA decimalNumberByDividingBy:numberB withBehavior:roundingBehavior];
+      NSString *strResult = [NSString stringWithFormat:@"%@%@",[numResult stringValue],unitStr];
+      return strResult;
+}
+
 
 @end

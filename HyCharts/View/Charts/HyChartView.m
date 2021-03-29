@@ -226,7 +226,8 @@ dispatch_semaphore_signal(self.arraySemaphore);
     }
     
     if (self.chartCursor.isShowing) {
-        [self.chartCursor dismiss];
+//        TODO: SM
+//        [self.chartCursor dismiss];
     }
     
     NSInteger itemsCount =
@@ -429,7 +430,7 @@ dispatch_semaphore_signal(self.arraySemaphore);
             return;
         }
         
-        [self handleContentSize];        
+        [self handleContentSize];
         [self asyncHandler:^{
             LockModels(
                        [self._dataSource.modelDataSource.models removeObjectsAtIndexes:[NSIndexSet  indexSetWithIndexesInRange:NSMakeRange(0, indexs)]];
@@ -756,6 +757,9 @@ dispatch_semaphore_signal(self.arraySemaphore);
         if (yAxisMaxValueExtraPrecent) {
             maxValue = maxValue + subValue * yAxisMaxValueExtraPrecent.doubleValue;
         }
+        if (maxValue == 0) {
+            maxValue = 1;
+        }
         yAxisModel.yAxisMaxValue = [NSNumber numberWithDouble:maxValue];
     }
     
@@ -961,6 +965,11 @@ dispatch_semaphore_signal(self.arraySemaphore);
         NSNumber *minValue = yAxisModel.yAxisMinValue;
         NSNumber *valueRate = DividingNumber(SubtractingNumber(maxValue, minValue), @(chartH));
         NSString *yText = [self.yAxisNunmberFormatter stringFromNumber: AddingNumber(MultiplyingNumber(@(chartH - point.y), valueRate), minValue)];
+        
+//        TODO: SM
+        if ([self.vcId isEqualToString:@"1"]) {
+            yText = nil;
+        }
         
         !completion ?: completion(model,index, centerP, xText, yText);
     }

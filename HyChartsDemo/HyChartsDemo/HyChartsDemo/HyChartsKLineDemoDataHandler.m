@@ -32,6 +32,19 @@
     
 }
 
+
+
++ (void)requestDataWithDataSource:(id<HyChartKLineDataSourceProtocol>)dataSource
+                 dataDict:(NSDictionary *)dataDict
+                       completion:(void(^_Nullable)(void))completion{
+    
+    
+    [self handleWithArray:dataDict[@"data"] dataSorce:dataSource];
+    
+    completion();
+
+}
+
 + (void)handleWithArray:(NSArray *)array
               dataSorce:(id<HyChartKLineDataSourceProtocol>)dataSorce {
     
@@ -40,18 +53,19 @@
     [[dataSorce.modelDataSource configNumberOfItems:^NSInteger{
         return array.count;
     }] configModelForItemAtIndex:^(id<HyChartKLineModelProtocol>  _Nonnull model, NSInteger index) {
-        
+        if (array.count-1<index) {
+            return;
+        }
         NSDictionary *dict = array[index];
-        model.closePrice = [NSNumber numberWithDouble:[dict[@"Closed"] doubleValue]];
-        model.openPrice = [NSNumber numberWithDouble:[dict[@"Opened"] doubleValue]];
-        model.highPrice = [NSNumber numberWithDouble:[dict[@"Highest"] doubleValue]];
-        model.lowPrice = [NSNumber numberWithDouble:[dict[@"Lowest"] doubleValue]];
-        model.volume = [NSNumber numberWithDouble:[dict[@"DNum"] doubleValue]];
+        model.closePrice = [NSNumber numberWithDouble:[dict[@"close"] doubleValue]];
+        model.openPrice = [NSNumber numberWithDouble:[dict[@"open"] doubleValue]];
+        model.highPrice = [NSNumber numberWithDouble:[dict[@"high"] doubleValue]];
+        model.lowPrice = [NSNumber numberWithDouble:[dict[@"low"] doubleValue]];
+        model.volume = [NSNumber numberWithDouble:[dict[@"amount"] doubleValue]];
+        model.trendPercent = [NSNumber numberWithFloat:[dict[@"rise"] floatValue]];
+        model.trendChanging = [NSNumber numberWithFloat:[dict[@"amplitude"] floatValue]];
         
-        model.trendPercent = [NSNumber numberWithFloat:[dict[@"Rose"] floatValue]];
-        model.trendChanging = [NSNumber numberWithFloat:[dict[@"Rise"] floatValue]];
-
-        time_t timeInterval = [dict[@"Timestamp"] doubleValue];
+        time_t timeInterval = [dict[@"id"] doubleValue];
         struct tm *cTime = localtime(&timeInterval);
         NSString *string = [NSString stringWithFormat:@"%02d-%02d %02d:%02d", cTime->tm_mon + 1, cTime->tm_mday, cTime->tm_hour, cTime->tm_min];
         model.text = string;
@@ -125,12 +139,12 @@
             case HyChartKLineTechnicalTypeSMA:{
                 title =
                 [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.priceSMA(number.integerValue)];
-                title = [NSString stringWithFormat:@"MA%@: %@", number, title];
+                title = [NSString stringWithFormat:@"MA%@: %@", number, [self changeAsset:title]];
             }break;
             case HyChartKLineTechnicalTypeEMA:{
                 title =
                 [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.priceEMA(number.integerValue)];
-                title = [NSString stringWithFormat:@"EMA%@: %@", number, title];
+                title = [NSString stringWithFormat:@"EMA%@: %@", number, [self changeAsset:title]];
             }break;
             default:
             break;
@@ -198,8 +212,8 @@
     textLayer.contentsScale = UIScreen.mainScreen.scale;
     textLayer.alignmentMode = kCAAlignmentCenter;
     [layer addSublayer:textLayer];
-    
-    textLayer.string = [NSString stringWithFormat:@"VOL: %@", SafetyString([dataSorce.modelDataSource.volumeNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.volume])];
+   
+    textLayer.string = [NSString stringWithFormat:@"VOL: %@", [self changeAsset:SafetyString([dataSorce.modelDataSource.volumeNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.volume])]];
     CGSize size = [textLayer.string  sizeWithAttributes:@{NSFontAttributeName : configure.newpriceFont}];
     textLayer.frame = CGRectMake(left, 0, size.width, size.height);
     left = left + size.width + 10;
@@ -221,13 +235,13 @@
         switch (type) {
             case HyChartKLineTechnicalTypeSMA:{
                 title =
-                [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.priceSMA(number.integerValue)];
-                title = [NSString stringWithFormat:@"MA%@: %@", number, title];
+                [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.volumeSMA(number.integerValue)];
+                title = [NSString stringWithFormat:@"MA%@: %@", number, [self changeAsset:title]];
             }break;
             case HyChartKLineTechnicalTypeEMA:{
                 title =
-                [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.priceEMA(number.integerValue)];
-                title = [NSString stringWithFormat:@"EMA%@: %@", number, title];
+                [dataSorce.modelDataSource.priceNunmberFormatter stringFromNumber:dataSorce.modelDataSource.models.firstObject.volumeSMA(number.integerValue)];
+                title = [NSString stringWithFormat:@"EMA%@: %@", number,  [self changeAsset:title]];
             }break;
             default:
             break;
@@ -348,6 +362,44 @@
     }
    layer.frame = CGRectMake(0, 0, left, height);
    return layer;
+}
+
+
+
+// TODO: SM
++ (NSString *)changeAsset:(NSString *)string
+{
+    NSDecimalNumber *numberA = [NSDecimalNumber decimalNumberWithString:string];
+      NSDecimalNumber *numberB ;
+      NSString *unitStr;
+        
+    NSString * subStr = [NSString stringWithFormat:@"%ld",[string integerValue]];
+    
+      if (subStr.length > 3 && subStr.length <7 ) {
+          numberB =  [NSDecimalNumber decimalNumberWithString:@"1000"];
+          unitStr = @"K";
+      }else if (subStr.length >6){
+          numberB =  [NSDecimalNumber decimalNumberWithString:@"1000000"];
+          unitStr = @"M";
+      }
+//      else if(string.length ==8){
+//          numberB =  [NSDecimalNumber decimalNumberWithString:@"10000000"];
+//          unitStr = @"千万";
+//      }
+//      else if (string.length > 8){
+//          numberB =  [NSDecimalNumber decimalNumberWithString:@"100000000"];
+//          unitStr = @"亿";
+//      }
+      else{
+          return string;
+      }
+      //NSDecimalNumberBehaviors对象的创建  参数 1.RoundingMode 一个取舍枚举值 2.scale 处理范围 3.raiseOnExactness  精确出现异常是否抛出原因 4.raiseOnOverflow  上溢出是否抛出原因  4.raiseOnUnderflow  下溢出是否抛出原因  5.raiseOnDivideByZero  除以0是否抛出原因。
+      NSDecimalNumberHandler *roundingBehavior = [NSDecimalNumberHandler decimalNumberHandlerWithRoundingMode:NSRoundDown scale:2 raiseOnExactness:NO raiseOnOverflow:NO raiseOnUnderflow:NO raiseOnDivideByZero:NO];
+      
+      /// 这里不仅包含Multiply还有加 减 乘。
+      NSDecimalNumber *numResult = [numberA decimalNumberByDividingBy:numberB withBehavior:roundingBehavior];
+      NSString *strResult = [NSString stringWithFormat:@"%@%@",[numResult stringValue],unitStr];
+      return strResult;
 }
 
 @end

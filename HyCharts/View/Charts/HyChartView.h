@@ -25,6 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (DataSourceType)dataSource;
 
+// TODO: SM
+@property (nonatomic, copy) NSString * vcId; // 1 币种数据折线图
+
 
 
 @end
